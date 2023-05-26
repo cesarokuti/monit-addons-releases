@@ -1,0 +1,14 @@
+{
+   "dependencies":[
+      {
+         "name":"harbor",
+         "provider":"artifacthub",
+         "repository":"harbor/harbor"
+      },
+      {
+         "name":"argo-cd",
+         "provider":"artifacthub",
+         "repository":"argo/argo-cd"
+      }
+   ]
+}
