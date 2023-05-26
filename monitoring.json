@@ -9,6 +9,11 @@
          "name":"argo-cd",
          "provider":"artifacthub",
          "repository":"argo/argo-cd"
+      },
+      {
+         "name":"karpenter",
+         "provider":"artifacthub",
+         "repository":"oci-karpenter/karpenter"
       }
    ]
 }
