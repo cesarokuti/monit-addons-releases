@@ -43,7 +43,7 @@ const (
 	path  = "chart/default-add-ons"
 )
 
-func compareFile(r Releases, c Chart) (string, string) {
+func compareFile(r Releases, c Chart) (string, string, string) {
 	for _, depJson := range r.Dependencies {
 		if depJson.Provider == "artifacthub" {
 			latestVersion := artifactHub(depJson.Name, depJson.Repository)
@@ -54,19 +54,19 @@ func compareFile(r Releases, c Chart) (string, string) {
 				if depChart.Name == depJson.Name {
 					v2, _ := semver.NewVersion(depChart.Version)
 					if v1.GreaterThan(v2) {
-						return "Package have new release", latestVersion
+						return "Package have new release", depJson.Name, latestVersion
 					} else {
-						return "Package is up-to-date", latestVersion
+						return "Package is up-to-date", depJson.Name, latestVersion
 					}
 
 				}
 			}
 
 		} else {
-			return "provide not supported", depJson.Provider
+			return "provide not supported", depJson.Name, depJson.Provider
 		}
 	}
-	return "nothing to do", "nothing"
+	return "nothing", "to", "do"
 }
 
 func gitHub() {
@@ -86,29 +86,24 @@ func gitHub() {
 
 	if len(directories) > 0 {
 		for _, directory := range directories {
-			filePath := *directory.Path + "/monitoring.json"
+			filePath := *directory.Path + "/Chart.yaml"
+			var chart Chart
+			contentYaml, _, _, _ := client.Repositories.GetContents(ctx, owner, repo, filePath, nil)
+			y, _ := contentYaml.GetContent()
+
+			yaml.Unmarshal([]byte(y), &chart)
+			filePath = *directory.Path + "/releases.json"
 			var release Releases
 			contentJson, _, _, err := client.Repositories.GetContents(ctx, owner, repo, filePath, nil)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("Releases file not found: %v\n", filePath)
+				fmt.Println(chartVersion(chart))
 				continue
-			}
-			j, _ := contentJson.GetContent()
-			if len(j) > 0 {
+			} else if contentJson != nil {
+				j, _ := contentJson.GetContent()
 				json.Unmarshal([]byte(j), &release)
-
-				filePath = *directory.Path + "/Chart.yaml"
-				var chart Chart
-				contentYaml, _, _, _ := client.Repositories.GetContents(ctx, owner, repo, filePath, nil)
-				y, _ := contentYaml.GetContent()
-				if len(y) > 0 {
-
-					yaml.Unmarshal([]byte(y), &chart)
-					fmt.Println(compareFile(release, chart))
-				}
+				fmt.Println(compareFile(release, chart))
 			}
 		}
-	} else {
-		fmt.Println("Error to get directories")
 	}
 }
