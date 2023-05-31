@@ -3,7 +3,6 @@ module github.com/cesarokuti/monit-addons-releases
 go 1.20
 
 require (
-	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/google/go-github/v52 v52.0.0
 	golang.org/x/oauth2 v0.8.0
