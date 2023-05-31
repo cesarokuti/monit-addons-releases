@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v52/github"
 	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v3"
