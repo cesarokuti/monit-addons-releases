@@ -5,11 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/cesarokuti/releases-monitoring/helm"
 	"github.com/google/go-github/v52/github"
 	"golang.org/x/oauth2"
+)
+
+var (
+	release       Releases
+	latestVersion string
 )
 
 type Release struct {
@@ -20,32 +25,6 @@ type Release struct {
 
 type Releases struct {
 	Dependencies []Release `json:"dependencies"`
-}
-
-func compareFile(r Releases, c helm.Chart) (string, string, string) {
-	for _, depJson := range r.Dependencies {
-		if depJson.Provider == "artifacthub" {
-			latestVersion := helm.ArtifactHub(depJson.Name, depJson.Repository)
-
-			v1, _ := semver.NewVersion(latestVersion)
-
-			for _, depChart := range c.Dependencies {
-				if depChart.Name == depJson.Name {
-					v2, _ := semver.NewVersion(depChart.Version)
-					if v1.GreaterThan(v2) {
-						return "Package have new release", depJson.Name, latestVersion
-					} else {
-						return "Package is up-to-date", depJson.Name, latestVersion
-					}
-
-				}
-			}
-
-		} else {
-			return "provide not supported", depJson.Name, depJson.Provider
-		}
-	}
-	return "nothing", "to", "do"
 }
 
 func main() {
@@ -75,20 +54,45 @@ func main() {
 				fmt.Printf("Chart.yaml not found: %v\n", err)
 				continue
 			}
-			chart := helm.GetChartFile(contentYaml.GetContent())
+			y, _ := contentYaml.GetContent()
+			c := helm.GetChartFile(y)
 
 			filePath = *directory.Path + "/releases.json"
-			var release Releases
 			contentJson, _, _, err := client.Repositories.GetContents(ctx, owner, repo, filePath, nil)
 			if err != nil {
-				fmt.Printf("Releases file not found: %v\n", filePath)
-				fmt.Println(helm.ChartVersion(chart))
-				continue
+				fmt.Printf("Releases file not found: %v trying to get Chart url\n", filePath)
+			} else {
+				j, _ := contentJson.GetContent()
+				json.Unmarshal([]byte(j), &release)
 			}
-			j, _ := contentJson.GetContent()
-			json.Unmarshal([]byte(j), &release)
-			fmt.Println(compareFile(release, chart))
 
+			for _, depChart := range c.Dependencies {
+				if contentJson == nil {
+					if strings.HasPrefix(depChart.Repository, "https://") {
+
+						latestVersion, err = helm.ChartVersion(depChart.Repository, depChart.Name)
+						if err != nil {
+							fmt.Println(err)
+						}
+					} else if strings.HasPrefix(depChart.Repository, "oci://") {
+						fmt.Printf("OCI repository not supported: %s\n", depChart.Repository)
+					}
+
+				} else {
+					for _, depJson := range release.Dependencies {
+						if depJson.Provider == "artifacthub" {
+							latestVersion = helm.ArtifactHub(depJson.Repository)
+
+						} else {
+							fmt.Printf("Provider not supported: %s for package %s\n", depJson.Provider, depJson.Name)
+						}
+					}
+				}
+				if latestVersion != "" {
+					fmt.Printf("%s %s %s\n", depChart.Name, helm.VersionCompare(latestVersion, depChart.Version), latestVersion)
+				}
+			}
+			continue
 		}
 	}
 }

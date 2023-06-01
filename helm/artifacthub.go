@@ -10,9 +10,9 @@ type Package struct {
 	Version string `json:"version"`
 }
 
-func ArtifactHub(depName, depRepo string) string {
+func ArtifactHub(r string) string {
 
-	apiURL := "https://artifacthub.io/api/v1/packages/helm/" + depRepo
+	apiURL := "https://artifacthub.io/api/v1/packages/helm/" + r
 
 	response, err := http.Get(apiURL)
 	if err != nil {
