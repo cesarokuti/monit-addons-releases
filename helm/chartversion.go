@@ -27,6 +27,7 @@ type DependencyChart struct {
 
 func GetChartFile(y string) Chart {
 	var chart Chart
+
 	yaml.Unmarshal([]byte(y), &chart)
 	return chart
 
@@ -58,7 +59,7 @@ func VersionCompare(l string, a string) string {
 	if v1.GreaterThan(v2) {
 		return "have new release"
 	} else {
-		return "is up-to-date"
+		return ""
 	}
 
 }

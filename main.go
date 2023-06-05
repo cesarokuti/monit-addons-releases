@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cesarokuti/releases-monitoring/gchat"
 	"github.com/cesarokuti/releases-monitoring/helm"
 	"github.com/google/go-github/v52/github"
 	"golang.org/x/oauth2"
@@ -67,32 +68,38 @@ func main() {
 			}
 
 			for _, depChart := range c.Dependencies {
-				if contentJson == nil {
-					if strings.HasPrefix(depChart.Repository, "https://") {
-
-						latestVersion, err = helm.ChartVersion(depChart.Repository, depChart.Name)
-						if err != nil {
-							fmt.Println(err)
-						}
-					} else if strings.HasPrefix(depChart.Repository, "oci://") {
-						fmt.Printf("OCI repository not supported: %s\n", depChart.Repository)
-					}
-
-				} else {
+				if contentJson != nil {
 					for _, depJson := range release.Dependencies {
-						if depJson.Provider == "artifacthub" {
-							latestVersion = helm.ArtifactHub(depJson.Repository)
-
-						} else {
-							fmt.Printf("Provider not supported: %s for package %s\n", depJson.Provider, depJson.Name)
+						if depChart.Name == depJson.Name {
+							if depJson.Provider == "artifacthub" {
+								latestVersion = helm.ArtifactHub(depJson.Repository)
+								if helm.VersionCompare(latestVersion, depChart.Version) != "" {
+									fmt.Printf("%s %s %s\n", depChart.Name, helm.VersionCompare(latestVersion, depChart.Version), latestVersion)
+									gchat.SendAlert(depChart.Name, latestVersion)
+								}
+							} else {
+								fmt.Printf("Provider not supported: %s for package %s\n", depJson.Provider, depJson.Name)
+								latestVersion = ""
+							}
 						}
 					}
+				} else if strings.HasPrefix(depChart.Repository, "https://") {
+					latestVersion, err = helm.ChartVersion(depChart.Repository, depChart.Name)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					if helm.VersionCompare(latestVersion, depChart.Version) != "" {
+						fmt.Printf("%s %s %s\n", depChart.Name, helm.VersionCompare(latestVersion, depChart.Version), latestVersion)
+						gchat.SendAlert(depChart.Name, latestVersion)
+					}
+
+				} else if strings.HasPrefix(depChart.Repository, "oci://") {
+					fmt.Printf("OCI repository not supported: %s\n", depChart.Repository)
+					latestVersion = ""
 				}
-				if latestVersion != "" {
-					fmt.Printf("%s %s %s\n", depChart.Name, helm.VersionCompare(latestVersion, depChart.Version), latestVersion)
-				}
+
 			}
-			continue
 		}
 	}
 }
