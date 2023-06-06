@@ -73,8 +73,8 @@ func main() {
 						if depChart.Name == depJson.Name {
 							if depJson.Provider == "artifacthub" {
 								latestVersion = helm.ArtifactHub(depJson.Repository)
-								if helm.VersionCompare(latestVersion, depChart.Version) != "" {
-									fmt.Printf("%s %s %s\n", depChart.Name, helm.VersionCompare(latestVersion, depChart.Version), latestVersion)
+								if helm.VersionCompare(latestVersion, depChart.Version) {
+									fmt.Printf("%s have a new release %s\n", depChart.Name, latestVersion)
 									gchat.SendAlert(depChart.Name, latestVersion)
 								}
 							} else {
@@ -89,8 +89,8 @@ func main() {
 						fmt.Println(err)
 						continue
 					}
-					if helm.VersionCompare(latestVersion, depChart.Version) != "" {
-						fmt.Printf("%s %s %s\n", depChart.Name, helm.VersionCompare(latestVersion, depChart.Version), latestVersion)
+					if helm.VersionCompare(latestVersion, depChart.Version) {
+						fmt.Printf("%s have a new release %s\n", depChart.Name, latestVersion)
 						gchat.SendAlert(depChart.Name, latestVersion)
 					}
 

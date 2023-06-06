@@ -53,13 +53,13 @@ func ChartVersion(r string, n string) (string, error) {
 
 }
 
-func VersionCompare(l string, a string) string {
+func VersionCompare(l string, a string) bool {
 	v1, _ := semver.NewVersion(l)
 	v2, _ := semver.NewVersion(a)
 	if v1.GreaterThan(v2) {
-		return "have new release"
+		return true
 	} else {
-		return ""
+		return false
 	}
 
 }
