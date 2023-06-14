@@ -9,11 +9,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var (
-	release       Releases
-	latestVersion string
-)
-
 type Release struct {
 	Name       string `json:"name"`
 	Provider   string `json:"provider"`
@@ -33,10 +28,9 @@ func GetGitHubClient() (*github.Client, error) {
 
 	client := github.NewClient(tc)
 
-	// Testar a conexão
-	_, _, err := client.Users.Get(ctx, "") // Use uma chamada de API simples como exemplo
+	_, _, err := client.Users.Get(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("falha ao conectar ao GitHub: %v", err)
+		return nil, fmt.Errorf("failed to connect to GitHub: %v", err)
 	}
 
 	return client, nil

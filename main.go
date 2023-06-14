@@ -52,7 +52,7 @@ func main() {
 			continue
 		}
 		y, _ := yaml.GetContent()
-		c := helm.GetChartFile(y)
+		c, _ := helm.GetChartFile(y)
 
 		filePath = *directory.Path + "/releases.json"
 		j, err := git.GetFile(client, owner, repo, filePath)
@@ -68,10 +68,13 @@ func main() {
 				for _, depJson := range release.Dependencies {
 					if depChart.Name == depJson.Name {
 						if depJson.Provider == "artifacthub" {
-							latestVersion = helm.ArtifactHub(depJson.Repository)
+							latestVersion, err = helm.ArtifactHub(depJson.Repository)
 							if helm.VersionCompare(latestVersion, depChart.Version) {
 								fmt.Printf("%s have a new release %s\n", depChart.Name, latestVersion)
-								gchat.SendAlert(depChart.Name, latestVersion)
+								err = gchat.SendAlert(depChart.Name, latestVersion)
+								if err != nil {
+									fmt.Println(err)
+								}
 							}
 						} else {
 							fmt.Printf("Provider not supported: %s for package %s\n", depJson.Provider, depJson.Name)

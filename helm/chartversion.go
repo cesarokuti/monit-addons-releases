@@ -13,8 +13,8 @@ import (
 type Chart struct {
 	APIVersion   string            `yaml:"apiVersion"`
 	Name         string            `yaml:"name"`
-	Description  string            `yaml:"description"`
-	Type         string            `yaml:"type"`
+	Description  string            `yaml:"description,omitempty"`
+	Type         string            `yaml:"type,omitempty"`
 	Version      string            `yaml:"version"`
 	Dependencies []DependencyChart `yaml:"dependencies"`
 }
@@ -25,18 +25,24 @@ type DependencyChart struct {
 	Repository string `yaml:"repository"`
 }
 
-func GetChartFile(y string) Chart {
+func GetChartFile(y string) (Chart, error) {
 	var chart Chart
 
-	yaml.Unmarshal([]byte(y), &chart)
-	return chart
+	err := yaml.Unmarshal([]byte(y), &chart)
+	if err != nil {
+		return chart, fmt.Errorf("failed to unmarshal de YAML %v, %v", y, err)
+	}
+	return chart, nil
 
 }
 
 func ChartVersion(r string, n string) (string, error) {
 	url := r + "/index.yaml"
 
-	resp, _ := http.Get(url)
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("error to get %s", url)
+	}
 
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
@@ -45,11 +51,10 @@ func ChartVersion(r string, n string) (string, error) {
 	regex := regexp.MustCompile(regexStr)
 	matches := regex.FindStringSubmatch(string(body))
 	if len(matches) < 2 {
-		return "", fmt.Errorf("Not found Helm Chart release name")
+		return "", fmt.Errorf("not found Helm Chart release name")
 	} else {
 		return matches[1], nil
 	}
-	return "", fmt.Errorf("Repo not supported %s, %s\n", n, r)
 
 }
 
